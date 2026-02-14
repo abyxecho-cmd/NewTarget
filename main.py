@@ -6,7 +6,7 @@ import aiohttp
 from flask import Flask
 from threading import Thread
 
-# --- RENDER İÇİN WEB SUNUCU ---
+# --- RENDER WEB SUNUCU ---
 app = Flask('')
 @app.route('/')
 def home(): return "Bot Aktif!"
@@ -18,60 +18,68 @@ def keep_alive():
 
 # Environment Variables
 TOKEN = os.getenv("TOKEN")
-TARGET_ID = os.getenv("TARGET_ID")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 BEKLEME_SURESI = int(os.getenv("BEKLEME_SURESI", 1))
+# ID'leri virgülle ayırıp listeye çeviriyoruz
+TARGET_IDS = os.getenv("TARGET_ID", "").split(",")
 
 class MyBot(discord.Client):
     def __init__(self):
-        # Hata veren Intents kısmını kaldırdık, self-bot için böyle daha stabil
         super().__init__()
-        self.son_mesaj_vakti = None
-        self.son_mesaj_icerik = "Mesaj bulunamadı"
-        self.son_mesaj_linki = ""
-        self.bildirim_gonderildi = False
+        # Her kullanıcı için ayrı veri tutan bir sözlük (dict)
+        self.takip_verisi = {}
+        for uid in TARGET_IDS:
+            uid = uid.strip()
+            if uid:
+                self.takip_verisi[uid] = {
+                    "vakit": None,
+                    "icerik": "Mesaj bulunamadı",
+                    "link": "",
+                    "bildirildi": False
+                }
 
     async def on_ready(self):
         print(f"------------------------------------")
         print(f"Giriş Başarılı: {self.user}")
-        print(f"Hedef ID: {TARGET_ID}")
-        print(f"Süre: {BEKLEME_SURESI} dakika")
+        print(f"Takip Edilen Kişi Sayısı: {len(self.takip_verisi)}")
         print(f"------------------------------------")
         self.loop.create_task(self.takip_dongusu())
 
     async def on_message(self, message):
-        if str(message.author.id) == str(TARGET_ID):
-            self.son_mesaj_vakti = discord.utils.utcnow()
-            self.son_mesaj_icerik = message.content if message.content else "(Görsel/Dosya)"
+        uid = str(message.author.id)
+        if uid in self.takip_verisi:
+            self.takip_verisi[uid]["vakit"] = discord.utils.utcnow()
+            self.takip_verisi[uid]["icerik"] = message.content if message.content else "(Görsel/Dosya)"
             
             if message.guild:
-                self.son_mesaj_linki = f"https://discord.com/channels/{message.guild.id}/{message.channel.id}/{message.id}"
+                self.takip_verisi[uid]["link"] = f"https://discord.com/channels/{message.guild.id}/{message.channel.id}/{message.id}"
             else:
-                self.son_mesaj_linki = "DM Mesajı"
+                self.takip_verisi[uid]["link"] = "DM Mesajı"
                 
-            self.bildirim_gonderildi = False
-            print(f"Yeni mesaj yakalandı, sayaç sıfırlandı.")
+            self.takip_verisi[uid]["bildirildi"] = False
+            print(f"Hedef yakalandı: {message.author.name} mesaj attı.")
 
     async def takip_dongusu(self):
         await self.wait_until_ready()
         while not self.is_closed():
-            if self.son_mesaj_vakti and not self.bildirim_gonderildi:
-                simdi = discord.utils.utcnow()
-                gecen_saniye = (simdi - self.son_mesaj_vakti).total_seconds()
-                
-                if gecen_saniye >= (BEKLEME_SURESI * 60):
-                    vakit_str = self.son_mesaj_vakti.strftime('%H:%M:%S')
-                    bildirim = (
-                        f"⚠️ **SESSİZLİK TESPİT EDİLDİ**\n"
-                        f"👤 **Kullanıcı:** <@{TARGET_ID}>\n"
-                        f"⏳ **Süre:** {BEKLEME_SURESI} dakikadır mesaj yok.\n"
-                        f"🕒 **Son Mesaj Saati:** {vakit_str}\n"
-                        f"📝 **Son Mesaj:** {self.son_mesaj_icerik}\n"
-                        f"🔗 **Git:** [Mesaja Git]({self.son_mesaj_linki})"
-                    )
-                    await self.webhook_gonder(bildirim)
-                    self.bildirim_gonderildi = True
-                    print(f"Bildirim gönderildi.")
+            simdi = discord.utils.utcnow()
+            
+            for uid, data in self.takip_verisi.items():
+                if data["vakit"] and not data["bildirildi"]:
+                    gecen_saniye = (simdi - data["vakit"]).total_seconds()
+                    
+                    if gecen_saniye >= (BEKLEME_SURESI * 60):
+                        vakit_str = data["vakit"].strftime('%H:%M:%S')
+                        bildirim = (
+                            f"**KULLANICI SİKE SİKE SUSTU XD**\n"
+                            f"**KULLANICI:** <@{uid}>\n"
+                            f"**SÜRE:** {BEKLEME_SURESI} dakikadır mesaj yok.\n"
+                            f"**SON MESAJ SAATİ:** {vakit_str}\n"
+                            f"**SON MESAJ:** {data['icerik']}\n"
+                            f"**TIKLA:** [Mesaja Git]({data['link']})"
+                        )
+                        await self.webhook_gonder(bildirim)
+                        data["bildirildi"] = True
             
             await asyncio.sleep(15)
 
@@ -89,5 +97,3 @@ if __name__ == "__main__":
         keep_alive()
         client = MyBot()
         client.run(TOKEN)
-    else:
-        print("TOKEN bulunamadı!")
