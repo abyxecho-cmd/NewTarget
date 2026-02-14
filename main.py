@@ -20,13 +20,15 @@ def keep_alive():
 TOKEN = os.getenv("TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 BEKLEME_SURESI = int(os.getenv("BEKLEME_SURESI", 1))
-# ID'leri virgülle ayırıp listeye çeviriyoruz
 TARGET_IDS = os.getenv("TARGET_ID", "").split(",")
+
+# Etiketlenecek senin hesapların
+HESAP_1 = "1416866481018241044"
+HESAP_2 = "1411681601846378599"
 
 class MyBot(discord.Client):
     def __init__(self):
         super().__init__()
-        # Her kullanıcı için ayrı veri tutan bir sözlük (dict)
         self.takip_verisi = {}
         for uid in TARGET_IDS:
             uid = uid.strip()
@@ -41,7 +43,7 @@ class MyBot(discord.Client):
     async def on_ready(self):
         print(f"------------------------------------")
         print(f"Giriş Başarılı: {self.user}")
-        print(f"Takip Edilen Kişi Sayısı: {len(self.takip_verisi)}")
+        print(f"Takip Edilen Sayısı: {len(self.takip_verisi)}")
         print(f"------------------------------------")
         self.loop.create_task(self.takip_dongusu())
 
@@ -57,30 +59,29 @@ class MyBot(discord.Client):
                 self.takip_verisi[uid]["link"] = "DM Mesajı"
                 
             self.takip_verisi[uid]["bildirildi"] = False
-            print(f"Hedef yakalandı: {message.author.name} mesaj attı.")
 
     async def takip_dongusu(self):
         await self.wait_until_ready()
         while not self.is_closed():
             simdi = discord.utils.utcnow()
-            
             for uid, data in self.takip_verisi.items():
                 if data["vakit"] and not data["bildirildi"]:
                     gecen_saniye = (simdi - data["vakit"]).total_seconds()
                     
                     if gecen_saniye >= (BEKLEME_SURESI * 60):
                         vakit_str = data["vakit"].strftime('%H:%M:%S')
+                        # Bildirim metni: Hedef ID sadece yazı olarak kalır, senin hesapların etiketlenir.
                         bildirim = (
-                            f"**KULLANICI SİKE SİKE SUSTU XD**\n"
-                            f"**KULLANICI:** <@{uid}>\n"
-                            f"**SÜRE:** {BEKLEME_SURESI} dakikadır mesaj yok.\n"
-                            f"**SON MESAJ SAATİ:** {vakit_str}\n"
-                            f"**SON MESAJ:** {data['icerik']}\n"
-                            f"**TIKLA:** [Mesaja Git]({data['link']})"
+                            f"🔔 <@{HESAP_1}> <@{HESAP_2}>\n"
+                            f"⚠️ **SESSİZLİK TESPİT EDİLDİ**\n"
+                            f"👤 **Kullanıcı ID:** `{uid}`\n"
+                            f"⏳ **Süre:** {BEKLEME_SURESI} dakikadır mesaj yok.\n"
+                            f"🕒 **Son Mesaj Saati:** {vakit_str}\n"
+                            f"📝 **Son Mesaj:** {data['icerik']}\n"
+                            f"🔗 **Git:** [Mesaja Git]({data['link']})"
                         )
                         await self.webhook_gonder(bildirim)
                         data["bildirildi"] = True
-            
             await asyncio.sleep(15)
 
     async def webhook_gonder(self, icerik):
