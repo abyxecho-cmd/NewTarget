@@ -72,13 +72,13 @@ class MyBot(discord.Client):
                         vakit_str = data["vakit"].strftime('%H:%M:%S')
                         # Bildirim metni: Hedef ID sadece yazı olarak kalır, senin hesapların etiketlenir.
                         bildirim = (
-                            f"🔔 <@{HESAP_1}> <@{HESAP_2}>\n"
-                            f"⚠️ **SESSİZLİK TESPİT EDİLDİ**\n"
-                            f"👤 **Kullanıcı ID:** `{uid}`\n"
-                            f"⏳ **Süre:** {BEKLEME_SURESI} dakikadır mesaj yok.\n"
-                            f"🕒 **Son Mesaj Saati:** {vakit_str}\n"
-                            f"📝 **Son Mesaj:** {data['icerik']}\n"
-                            f"🔗 **Git:** [Mesaja Git]({data['link']})"
+                            f"<@{HESAP_1}> <@{HESAP_2}>\n"
+                            f"**KULANICI İT GİBİ SUSMUŞTUR XD**\n"
+                            f"**Kullanıcı ID:** `{uid}`\n"
+                            f"**Süre:** {BEKLEME_SURESI} dakikadır mesaj yok.\n"
+                            f"**Son Mesaj Saati:** {vakit_str}\n"
+                            f"**Son Mesaj:** {data['icerik']}\n"
+                            f"**Git:** [Mesaja Git]({data['link']})"
                         )
                         await self.webhook_gonder(bildirim)
                         data["bildirildi"] = True
