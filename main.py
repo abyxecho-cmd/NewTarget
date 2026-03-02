@@ -20,7 +20,7 @@ def keep_alive():
 TOKEN = os.getenv("TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 BEKLEME_SURESI = int(os.getenv("BEKLEME_SURESI", 1))
-TARGET_IDS = os.getenv("TARGET_ID", "").split(",")
+TARGET_ID = os.getenv("TARGET_ID", "").split(",")
 
 # Etiketlenecek senin hesapların
 HESAP_1 = "1416866481018241044"
