@@ -23,8 +23,8 @@ BEKLEME_SURESI = int(os.getenv("BEKLEME_SURESI", 1))
 TARGET_IDS = os.getenv("TARGET_IDS", "").split(",")
 
 # Etiketlenecek senin hesapların
-HESAP_1 = "1416866481018241044"
-HESAP_2 = "1411681601846378599"
+HESAP_1 = "1411681601846378599"
+HESAP_2 = "1502776640189632666"
 
 class MyBot(discord.Client):
     def __init__(self):
